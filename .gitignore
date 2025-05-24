@@ -1,0 +1,15 @@
+.zig-cache/
+zig-out/
+
+*.a
+*.bin
+*.csv
+*.dat
+*.gif
+*.jpeg
+*.jpg
+*.o
+*.png
+*.so
+*.tif
+*.txt
