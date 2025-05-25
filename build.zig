@@ -124,6 +124,27 @@ pub fn build(b: *std.Build) void {
     example.linkLibrary(libgeotiff);
 
     b.installArtifact(example);
+
+    // =========================================================================
+    // Zig Module
+    const mod = b.addModule("geotiff", .{
+        .root_source_file = b.path("src/geotiff.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    mod.linkLibrary(libgeotiff);
+
+    const example2 = b.addExecutable(.{
+        .name = "example",
+        .root_source_file = b.path("src/example.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    example2.root_module.addImport("geotiff", mod);
+
+    b.installArtifact(example2);
 }
 
 const geotiff_lib_sources: []const []const u8 = &.{
