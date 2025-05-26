@@ -1,6 +1,6 @@
 const std = @import("std");
 
-pub fn build(b: *std.Build) void {
+pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     const linkage = b.option(
@@ -8,6 +8,8 @@ pub fn build(b: *std.Build) void {
         "linkage",
         "Specify static or dynamic linkage",
     ) orelse .static;
+
+    const build_example = b.option(bool, "build-example", "Build the example app using the Zig module") orelse false;
 
     // =========================================================================
     // Dependencies
@@ -135,16 +137,21 @@ pub fn build(b: *std.Build) void {
     });
     mod.linkLibrary(libgeotiff);
 
-    const example2 = b.addExecutable(.{
-        .name = "example",
-        .root_source_file = b.path("src/example.zig"),
-        .target = target,
-        .optimize = optimize,
-        .link_libc = true,
-    });
-    example2.root_module.addImport("geotiff", mod);
+    if (build_example) {
+        const stbi = b.lazyDependency("stb_image", .{ .optimize = optimize, .target = target }) orelse return error.DependencyMissing;
 
-    b.installArtifact(example2);
+        const example2 = b.addExecutable(.{
+            .name = "example",
+            .root_source_file = b.path("src/example.zig"),
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        });
+        example2.root_module.addImport("geotiff", mod);
+        example2.root_module.addImport("stb_image", stbi.module("stb_image"));
+
+        b.installArtifact(example2);
+    }
 }
 
 const geotiff_lib_sources: []const []const u8 = &.{

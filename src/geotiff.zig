@@ -4,6 +4,22 @@ const c = @cImport({
     @cInclude("xtiffio.h");
 });
 
+pub const ModelType = enum(u8) {
+    /// Projection Coordinate System
+    ModelTypeProjected = 1,
+    /// Geographic latitude-longitude System
+    ModelTypeGeographic = 2,
+    /// Geocentric (X,Y,Z) Coordinate System
+    ModelTypeGeocentric = 3,
+};
+
+/// Handle the return value of a C function call
+fn tryCall(res: c_int) !void {
+    if (res < 0) {
+        return error.CError;
+    }
+}
+
 pub const GTiff = struct {
     tif: *c.TIFF = undefined,
     gtif: *c.GTIF = undefined,
@@ -38,60 +54,63 @@ pub const GTiff = struct {
     }
 
     /// Set a key value as a u16 (short)
-    pub fn SetKeyShort(self: *GTiff, key: u32, value: u16) void {
-        _ = c.GTIFKeySet(self.gtif, key, c.TYPE_SHORT, 1, value);
+    pub fn SetKeyShort(self: *GTiff, key: u32, value: u16) !void {
+        try tryCall(c.GTIFKeySet(self.gtif, key, c.TYPE_SHORT, 1, value));
     }
 
     /// Set a key value as a double
-    pub fn SetKeyDouble(self: *GTiff, key: u32, value: f64) void {
-        _ = c.GTIFKeySet(self.gtif, key, c.TYPE_DOUBLE, 1, value);
+    pub fn SetKeyDouble(self: *GTiff, key: u32, value: f64) !void {
+        try tryCall(c.GTIFKeySet(self.gtif, key, c.TYPE_DOUBLE, 1, value));
     }
 
     /// Set a key value as an ASCII string
-    pub fn SetKeyAscii(self: *GTiff, key: u32, value: []const u8) void {
-        _ = c.GTIFKeySet(self.gtif, key, c.TYPE_ASCII, 0, value);
+    pub fn SetKeyAscii(self: *GTiff, key: u32, value: []const u8) !void {
+        try tryCall(c.GTIFKeySet(self.gtif, key, c.TYPE_ASCII, 0, value));
     }
 
     /// Write the image data to the TIFF file.
     /// This additionally sets the width, height, and pixel format metadata.
-    /// TODO: Set the pixel format - 8-bit RGB, 32-bit mono (terrain height), etc.
-    pub fn writeImage(self: *GTiff, width: u16, height: u16, nchan: u8, pixels: []const u8) void {
-        std.debug.assert(pixels.len == width * height * nchan);
-        _ = c.TIFFSetField(self.tif, c.TIFFTAG_COMPRESSION, c.COMPRESSION_NONE);
-        _ = c.TIFFSetField(self.tif, c.TIFFTAG_PHOTOMETRIC, c.PHOTOMETRIC_MINISBLACK);
-        _ = c.TIFFSetField(self.tif, c.TIFFTAG_PLANARCONFIG, c.PLANARCONFIG_CONTIG);
-        _ = c.TIFFSetField(self.tif, c.TIFFTAG_IMAGEWIDTH, width);
-        _ = c.TIFFSetField(self.tif, c.TIFFTAG_IMAGELENGTH, height);
-        _ = c.TIFFSetField(self.tif, c.TIFFTAG_BITSPERSAMPLE, 8);
+    pub fn writeImage(self: *GTiff, width: u32, height: u32, nchan: u8, pixels: []const u8) !void {
+        const nbytes: u32 = nchan * width * height;
+        std.debug.assert(pixels.len == nbytes);
+
+        // Basic metadata
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_COMPRESSION, c.COMPRESSION_NONE));
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_PHOTOMETRIC, c.PHOTOMETRIC_MINISBLACK));
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_PLANARCONFIG, c.PLANARCONFIG_CONTIG));
+
+        // Image metadata: Width, Height, Number of channels (samples) per pixel, bit size of each channel (sample)
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_IMAGEWIDTH, width));
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_IMAGELENGTH, height));
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_SAMPLESPERPIXEL, @as(u16, nchan)));
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_BITSPERSAMPLE, @as(u16, 8)));
+
+        // Basic GeoTIFF tags
+        try tryCall(c.GTIFKeySet(self.gtif, c.GTRasterTypeGeoKey, c.TYPE_SHORT, 1, c.RasterPixelIsArea));
+        try tryCall(c.GTIFKeySet(self.gtif, c.GeogAngularUnitsGeoKey, c.TYPE_SHORT, 1, c.Angular_Degree));
+        try tryCall(c.GTIFKeySet(self.gtif, c.GeogLinearUnitsGeoKey, c.TYPE_SHORT, 1, c.Linear_Meter));
 
         const stride: u32 = width * nchan;
         var i: u32 = 0;
         while (i < height) : (i += 1) {
-            const line: []const u8 = pixels[i * stride];
-            _ = c.TIFFWriteScanline(self.tif, @ptrCast(line), i, 0);
+            const line: *anyopaque = @ptrCast(@constCast(&pixels[i * stride]));
+            try tryCall(c.TIFFWriteScanline(self.tif, line, i, 0));
         }
     }
 
     /// Set the raster-space to model-space mapping.
     /// Sets the top-left of the raster space (pixel 0,0) to the model-space (x,y) position.
     /// We are ignoring multi-valued raster images (K index) and 3D mappings.
-    pub fn setOrigin(self: *GTiff, x: f64, y: f64) void {
+    pub fn setOrigin(self: *GTiff, x: f64, y: f64) !void {
         // [i, j, k, x, y, z]
         const tiepoints: [6]f64 = .{ 0, 0, 0, x, y, 0 };
-        const res: i32 = c.TIFFSetField(self.tif, c.TIFFTAG_GEOTIEPOINTS, @as(u32, 6), &tiepoints[0]);
-        if (res < 0) {
-            // todo
-            std.debug.print("Error setting field TIFFTAG_GEOTIEPOINTS\n", .{});
-        }
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_GEOTIEPOINTS, @as(u32, 6), &tiepoints[0]));
     }
 
-    pub fn setPixelScale(self: *GTiff, xscale: f64, yscale: f64) void {
+    /// Set the pixel scale
+    pub fn setPixelScale(self: *GTiff, xscale: f64, yscale: f64) !void {
         const pixscale: [3]f64 = .{ xscale, yscale, 0 };
-        const res: i32 = c.TIFFSetField(self.tif, c.TIFFTAG_GEOPIXELSCALE, @as(u32, 3), &pixscale[0]);
-        if (res < 0) {
-            // todo
-            std.debug.print("Error setting field TIFFTAG_GEOPIXELSCALE\n", .{});
-        }
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_GEOPIXELSCALE, @as(u32, 3), &pixscale[0]));
     }
 };
 
@@ -151,10 +170,10 @@ pub const GTiff = struct {
 //void SetUpGeoKeys(GTIF *gtif)
 //{
 //  GTIFKeySet(gtif, GTModelTypeGeoKey, TYPE_SHORT, 1, ModelGeographic);
-//  GTIFKeySet(gtif, GTRasterTypeGeoKey, TYPE_SHORT, 1, RasterPixelIsArea);
 //  GTIFKeySet(gtif, GTCitationGeoKey, TYPE_ASCII, 0, "Just An Example");
 //  GTIFKeySet(gtif, GeographicTypeGeoKey, TYPE_SHORT,  1, KvUserDefined);
 //  GTIFKeySet(gtif, GeogCitationGeoKey, TYPE_ASCII, 0, "Everest Ellipsoid Used.");
+//  GTIFKeySet(gtif, GTRasterTypeGeoKey, TYPE_SHORT, 1, RasterPixelIsArea);
 //  GTIFKeySet(gtif, GeogAngularUnitsGeoKey, TYPE_SHORT,  1, Angular_Degree);
 //  GTIFKeySet(gtif, GeogLinearUnitsGeoKey, TYPE_SHORT,  1, Linear_Meter);
 //  GTIFKeySet(gtif, GeogGeodeticDatumGeoKey, TYPE_SHORT,     1, KvUserDefined);
