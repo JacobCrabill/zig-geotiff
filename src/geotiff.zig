@@ -13,6 +13,46 @@ pub const ModelType = enum(u8) {
     ModelTypeGeocentric = 3,
 };
 
+/// How the data for each pixel should be interpreted.
+/// Values taken from tiffio.h.
+pub const PixelFormat = enum(u16) {
+    /// Greyscale with 0=white, 2**N-1 = black
+    greyscale_inverted = 0,
+    /// Greyscale with 0=black, 2**N-1 = white
+    greyscale = 1,
+    /// Red/Green/Blue channels
+    rgb = 2,
+    /// Color map indexed
+    pallete = 3,
+    /// $holdout mask
+    mask = 4,
+    /// !color separations
+    separated = 5,
+    /// !CCIR 601
+    ycbcr = 6,
+    /// !1976 CIE L*a*b*
+    cielab = 8,
+    /// ICC L*a*b* [Adobe TIFF Technote 4]
+    icclab = 9,
+    /// ITU L*a*b*
+    itulab = 10,
+    /// color filter array
+    cfa = 32803,
+    /// CIE Log2(L)
+    logl = 32844,
+    /// CIE Log2(L) (u',v')
+    logluv = 32845,
+    _,
+};
+
+pub const ImageData = struct {
+    width: u32,
+    height: u32,
+    nchan: u8,
+    pixels: []const u8,
+    format: PixelFormat = .rgb,
+};
+
 /// Handle the return value of a C function call
 fn tryCall(res: c_int) !void {
     if (res < 0) {
@@ -70,19 +110,20 @@ pub const GTiff = struct {
 
     /// Write the image data to the TIFF file.
     /// This additionally sets the width, height, and pixel format metadata.
-    pub fn writeImage(self: *GTiff, width: u32, height: u32, nchan: u8, pixels: []const u8) !void {
-        const nbytes: u32 = nchan * width * height;
-        std.debug.assert(pixels.len == nbytes);
+    pub fn writeImage(self: *GTiff, image: ImageData) !void {
+        const nbytes: u32 = image.nchan * image.width * image.height;
+        std.debug.assert(image.pixels.len == nbytes);
 
         // Basic metadata
         try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_COMPRESSION, c.COMPRESSION_NONE));
-        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_PHOTOMETRIC, c.PHOTOMETRIC_MINISBLACK));
         try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_PLANARCONFIG, c.PLANARCONFIG_CONTIG));
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_PHOTOMETRIC, c.PHOTOMETRIC_RGB));
 
         // Image metadata: Width, Height, Number of channels (samples) per pixel, bit size of each channel (sample)
-        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_IMAGEWIDTH, width));
-        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_IMAGELENGTH, height));
-        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_SAMPLESPERPIXEL, @as(u16, nchan)));
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_IMAGEWIDTH, image.width));
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_IMAGELENGTH, image.height));
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_ROWSPERSTRIP, @as(u16, 1)));
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_SAMPLESPERPIXEL, @as(u16, image.nchan)));
         try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_BITSPERSAMPLE, @as(u16, 8)));
 
         // Basic GeoTIFF tags
@@ -90,10 +131,10 @@ pub const GTiff = struct {
         try tryCall(c.GTIFKeySet(self.gtif, c.GeogAngularUnitsGeoKey, c.TYPE_SHORT, 1, c.Angular_Degree));
         try tryCall(c.GTIFKeySet(self.gtif, c.GeogLinearUnitsGeoKey, c.TYPE_SHORT, 1, c.Linear_Meter));
 
-        const stride: u32 = width * nchan;
+        const stride: u32 = image.width * image.nchan;
         var i: u32 = 0;
-        while (i < height) : (i += 1) {
-            const line: *anyopaque = @ptrCast(@constCast(&pixels[i * stride]));
+        while (i < image.height) : (i += 1) {
+            const line: *anyopaque = @ptrCast(@constCast(&image.pixels[i * stride]));
             try tryCall(c.TIFFWriteScanline(self.tif, line, i, 0));
         }
     }
@@ -125,13 +166,13 @@ pub const GTiff = struct {
 //{
 //  const char *fname = "newgeo.tif";
 //
-//  TIFF *tif=XTIFFOpen(fname,"w");  /* TIFF-level descriptor */
+//  TIFF *tif=XTIFFOpen(fname,"w");  /// TIFF-level descriptor */
 //  if (!tif) {
 //    printf("failure in makegeo\n");
 //    return -1;
 //  }
 //
-//  GTIF *gtif = GTIFNew(tif);  /* GeoKey-level descriptor */
+//  GTIF *gtif = GTIFNew(tif);  /// GeoKey-level descriptor */
 //  if (!gtif)
 //  {
 //    printf("failure in makegeo\n");
