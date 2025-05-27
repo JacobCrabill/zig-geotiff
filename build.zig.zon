@@ -9,8 +9,8 @@
             .hash = "N-V-__8AAA3OOQDJcxc-7vk7V9PYYpRGretfTzAIBPOCjhtO",
         },
         .libtiff = .{
-            .url = "https://github.com/JacobCrabill/libtiff/archive/ba87188d36beb40a7790ec066d129a62e30b7ca0.tar.gz",
-            .hash = "libtiff-4.7.0-3SryBpJDMAApn2J2lgEdjV-3vXZ8N-v-r7EURyLvSRyy",
+            .url = "https://github.com/JacobCrabill/libtiff/archive/519d7502bcf0517d2f2527544aa7eb4ecbe04d4a.tar.gz",
+            .hash = "libtiff-4.7.0-3SryBnFDMACxkcN-nG1fwvMYYx-JpBTADUMqLFmE6igZ",
         },
         .proj = .{
             .url = "https://github.com/JacobCrabill/zig-PROJ/archive/b04a450bbefc45412d9ba4d3fae68ba196a33b01.tar.gz",
