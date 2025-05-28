@@ -131,6 +131,8 @@ pub const GTiff = struct {
         try tryCall(c.GTIFKeySet(self.gtif, c.GeogAngularUnitsGeoKey, c.TYPE_SHORT, 1, c.Angular_Degree));
         try tryCall(c.GTIFKeySet(self.gtif, c.GeogLinearUnitsGeoKey, c.TYPE_SHORT, 1, c.Linear_Meter));
 
+        try tryCall(c.GTIFWriteKeys(self.gtif));
+
         const stride: u32 = image.width * image.nchan;
         var i: u32 = 0;
         while (i < image.height) : (i += 1) {
