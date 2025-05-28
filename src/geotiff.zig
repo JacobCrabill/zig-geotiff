@@ -6,11 +6,11 @@ const c = @cImport({
 
 pub const ModelType = enum(u8) {
     /// Projection Coordinate System
-    ModelTypeProjected = 1,
+    Projected = 1,
     /// Geographic latitude-longitude System
-    ModelTypeGeographic = 2,
+    Geographic = 2,
     /// Geocentric (X,Y,Z) Coordinate System
-    ModelTypeGeocentric = 3,
+    Geocentric = 3,
 };
 
 /// How the data for each pixel should be interpreted.
@@ -105,7 +105,7 @@ pub const GTiff = struct {
 
     /// Set a key value as an ASCII string
     pub fn SetKeyAscii(self: *GTiff, key: u32, value: []const u8) !void {
-        try tryCall(c.GTIFKeySet(self.gtif, key, c.TYPE_ASCII, 0, value));
+        try tryCall(c.GTIFKeySet(self.gtif, key, c.TYPE_ASCII, 0, &value[0]));
     }
 
     /// Write the image data to the TIFF file.
@@ -166,13 +166,13 @@ pub const GTiff = struct {
 //{
 //  const char *fname = "newgeo.tif";
 //
-//  TIFF *tif=XTIFFOpen(fname,"w");  /// TIFF-level descriptor */
+//  TIFF *tif=XTIFFOpen(fname,"w");  /// TIFF-level descriptor
 //  if (!tif) {
 //    printf("failure in makegeo\n");
 //    return -1;
 //  }
 //
-//  GTIF *gtif = GTIFNew(tif);  /// GeoKey-level descriptor */
+//  GTIF *gtif = GTIFNew(tif);  /// GeoKey-level descriptor
 //  if (!gtif)
 //  {
 //    printf("failure in makegeo\n");
@@ -233,3 +233,152 @@ pub const GTiff = struct {
 //      TIFFError("WriteImage","failure in WriteScanline\n");
 //}
 //
+
+pub const RasterType = enum(u16) {
+    PixelIsArea = 1,
+    PixelIsPoint = 2,
+};
+
+pub const GTiffKeys = enum(u16) {
+    /// Section 6.3.1.1 Codes
+    GTModelTypeGeoKey = 1024,
+    /// Section 6.3.1.2 Codes
+    GTRasterTypeGeoKey = 1025,
+    /// documentation
+    GTCitationGeoKey = 1026,
+
+    // 6.2.2 Geographic CS Parameter Keys
+
+    /// Section 6.3.2.1 Codes
+    GeographicTypeGeoKey = 2048,
+    /// documentation
+    GeogCitationGeoKey = 2049,
+    /// Section 6.3.2.2 Codes
+    GeogGeodeticDatumGeoKey = 2050,
+    /// Section 6.3.2.4 codes
+    GeogPrimeMeridianGeoKey = 2051,
+    /// Section 6.3.1.3 Codes
+    GeogLinearUnitsGeoKey = 2052,
+    /// meters
+    GeogLinearUnitSizeGeoKey = 2053,
+    /// Section 6.3.1.4 Codes
+    GeogAngularUnitsGeoKey = 2054,
+    /// radians
+    GeogAngularUnitSizeGeoKey = 2055,
+    /// Section 6.3.2.3 Codes
+    GeogEllipsoidGeoKey = 2056,
+    /// GeogLinearUnits
+    GeogSemiMajorAxisGeoKey = 2057,
+    /// GeogLinearUnits
+    GeogSemiMinorAxisGeoKey = 2058,
+    /// ratio
+    GeogInvFlatteningGeoKey = 2059,
+    /// Section 6.3.1.4 Codes
+    GeogAzimuthUnitsGeoKey = 2060,
+    /// GeoAngularUnit
+    GeogPrimeMeridianLongGeoKey = 2061,
+    /// 2011 - proposed addition
+    GeogTOWGS84GeoKey = 2062,
+
+    // 6.2.3 Projected CS Parameter Keys
+    //    Several keys have been renamed,*/
+    //    and the deprecated names aliased for backward compatibility
+
+    /// Section 6.3.3.1 codes
+    ProjectedCSTypeGeoKey = 3072,
+    /// documentation
+    PCSCitationGeoKey = 3073,
+    /// Section 6.3.3.2 codes
+    ProjectionGeoKey = 3074,
+    /// Section 6.3.3.3 codes
+    ProjCoordTransGeoKey = 3075,
+    /// Section 6.3.1.3 codes
+    ProjLinearUnitsGeoKey = 3076,
+    /// meters
+    ProjLinearUnitSizeGeoKey = 3077,
+    /// GeogAngularUnit
+    ProjStdParallel1GeoKey = 3078,
+    /// ** alias **
+    //ProjStdParallelGeoKey=rojStdParallel1GeoKey,
+    /// GeogAngularUnit
+    ProjStdParallel2GeoKey = 3079,
+    /// GeogAngularUnit
+    ProjNatOriginLongGeoKey = 3080,
+    /// ** alias **
+    //ProjOriginLongGeoKey=rojNatOriginLongGeoKey,
+    /// GeogAngularUnit
+    ProjNatOriginLatGeoKey = 3081,
+    /// ** alias **
+    //ProjOriginLatGeoKey=rojNatOriginLatGeoKey,
+    /// ProjLinearUnits
+    ProjFalseEastingGeoKey = 3082,
+    /// ProjLinearUnits
+    ProjFalseNorthingGeoKey = 3083,
+    /// GeogAngularUnit
+    ProjFalseOriginLongGeoKey = 3084,
+    /// GeogAngularUnit
+    ProjFalseOriginLatGeoKey = 3085,
+    /// ProjLinearUnits
+    ProjFalseOriginEastingGeoKey = 3086,
+    /// ProjLinearUnits
+    ProjFalseOriginNorthingGeoKey = 3087,
+    /// GeogAngularUnit
+    ProjCenterLongGeoKey = 3088,
+    /// GeogAngularUnit
+    ProjCenterLatGeoKey = 3089,
+    /// ProjLinearUnits
+    ProjCenterEastingGeoKey = 3090,
+    /// ProjLinearUnits
+    ProjCenterNorthingGeoKey = 3091,
+    /// ratio
+    ProjScaleAtNatOriginGeoKey = 3092,
+    /// ** alias **
+    //ProjScaleAtOriginGeoKey=rojScaleAtNatOriginGeoKey,
+    /// ratio
+    ProjScaleAtCenterGeoKey = 3093,
+    /// GeogAzimuthUnit
+    ProjAzimuthAngleGeoKey = 3094,
+    /// GeogAngularUnit
+    ProjStraightVertPoleLongGeoKey = 3095,
+    /// GeogAngularUnit
+    ProjRectifiedGridAngleGeoKey = 3096,
+
+    /// Section 6.3.4.1 codes
+    VerticalCSTypeGeoKey = 4096,
+    /// documentation
+    VerticalCitationGeoKey = 4097,
+    /// Section 6.3.4.2 codes
+    VerticalDatumGeoKey = 4098,
+    /// Section 6.3.1 (.x) codes
+    VerticalUnitsGeoKey = 4099,
+};
+
+/// GeoTIFF unit types for LinearUnits AngularUnits keys
+pub const UnitType = enum(u16) {
+    // -- Linear Types --
+    Linear_Meter = 9001,
+    Linear_Foot = 9002,
+    Linear_Foot_US_Survey = 9003,
+    Linear_Foot_Modified_American = 9004,
+    Linear_Foot_Clarke = 9005,
+    Linear_Foot_Indian = 9006,
+    Linear_Link = 9007,
+    Linear_Link_Benoit = 9008,
+    Linear_Link_Sears = 9009,
+    Linear_Chain_Benoit = 9010,
+    Linear_Chain_Sears = 9011,
+    Linear_Yard_Sears = 9012,
+    Linear_Yard_Indian = 9013,
+    Linear_Fathom = 9014,
+    Linear_Mile_International_Nautical = 9015,
+
+    // -- Angular Units --
+    Angular_Radian = 9101,
+    Angular_Degree = 9102,
+    Angular_Arc_Minute = 9103,
+    Angular_Arc_Second = 9104,
+    Angular_Grad = 9105,
+    Angular_Gon = 9106,
+    Angular_DMS = 9107,
+    Angular_DMS_Hemisphere = 9108,
+};
