@@ -13,6 +13,21 @@ pub const ModelType = enum(u8) {
     Geocentric = 3,
 };
 
+pub const SampleFormat = enum(u16) {
+    /// unsigned integer data
+    Uint = 1,
+    /// signed integer data
+    Int = 2,
+    /// IEEE floating point data
+    Float = 3,
+    /// untyped data
+    Void = 4,
+    /// complex signed int
+    ComplexInt = 5,
+    /// complex ieee floating
+    ComplexFloat = 6,
+};
+
 /// How the data for each pixel should be interpreted.
 /// Values taken from tiffio.h.
 pub const PixelFormat = enum(u16) {
@@ -49,8 +64,10 @@ pub const ImageData = struct {
     width: u32,
     height: u32,
     nchan: u8,
+    bits_per_chan: u8,
     pixels: []const u8,
-    format: PixelFormat = .rgb,
+    pixel_format: PixelFormat = .rgb,
+    sample_format: SampleFormat = .Uint,
 };
 
 /// Handle the return value of a C function call
@@ -111,20 +128,23 @@ pub const GTiff = struct {
     /// Write the image data to the TIFF file.
     /// This additionally sets the width, height, and pixel format metadata.
     pub fn writeImage(self: *GTiff, image: ImageData) !void {
-        const nbytes: u32 = image.nchan * image.width * image.height;
+        const stride: u32 = image.width * image.nchan * (image.bits_per_chan / 8);
+        const nbytes: u32 = image.height * stride;
         std.debug.assert(image.pixels.len == nbytes);
 
         // Basic metadata
         try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_COMPRESSION, c.COMPRESSION_NONE));
         try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_PLANARCONFIG, c.PLANARCONFIG_CONTIG));
-        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_PHOTOMETRIC, c.PHOTOMETRIC_RGB));
+
+        try self.setPixelFormat(image.pixel_format);
+        try self.setSampleFormat(image.sample_format);
 
         // Image metadata: Width, Height, Number of channels (samples) per pixel, bit size of each channel (sample)
         try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_IMAGEWIDTH, image.width));
         try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_IMAGELENGTH, image.height));
         try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_ROWSPERSTRIP, @as(u16, 1)));
         try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_SAMPLESPERPIXEL, @as(u16, image.nchan)));
-        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_BITSPERSAMPLE, @as(u16, 8)));
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_BITSPERSAMPLE, @as(u16, image.bits_per_chan)));
 
         // Basic GeoTIFF tags
         try tryCall(c.GTIFKeySet(self.gtif, c.GTRasterTypeGeoKey, c.TYPE_SHORT, 1, c.RasterPixelIsArea));
@@ -133,7 +153,6 @@ pub const GTiff = struct {
 
         try tryCall(c.GTIFWriteKeys(self.gtif));
 
-        const stride: u32 = image.width * image.nchan;
         var i: u32 = 0;
         while (i < image.height) : (i += 1) {
             const line: *anyopaque = @ptrCast(@constCast(&image.pixels[i * stride]));
@@ -154,6 +173,16 @@ pub const GTiff = struct {
     pub fn setPixelScale(self: *GTiff, xscale: f64, yscale: f64) !void {
         const pixscale: [3]f64 = .{ xscale, yscale, 0 };
         try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_GEOPIXELSCALE, @as(u32, 3), &pixscale[0]));
+    }
+
+    /// Set the pixel format (type of image - RGB, greyscale, etc.)
+    pub fn setPixelFormat(self: *GTiff, format: PixelFormat) !void {
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_PHOTOMETRIC, @intFromEnum(format)));
+    }
+
+    /// Set the sample data format
+    pub fn setSampleFormat(self: *GTiff, format: SampleFormat) !void {
+        try tryCall(c.TIFFSetField(self.tif, c.TIFFTAG_SAMPLEFORMAT, @intFromEnum(format)));
     }
 };
 
