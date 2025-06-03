@@ -152,6 +152,14 @@ pub fn build(b: *std.Build) !void {
 
         b.installArtifact(example2);
     }
+
+    const tests = b.addTest(.{
+        .root_module = mod,
+        .link_libc = true,
+    });
+    const run_tests = b.addRunArtifact(tests);
+    const test_step = b.step("test", "Run unit tests (and generate documentation)");
+    test_step.dependOn(&run_tests.step);
 }
 
 const geotiff_lib_sources: []const []const u8 = &.{

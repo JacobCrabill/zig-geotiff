@@ -9,7 +9,7 @@ pub fn main() !void {
     var gtif = geotiff.GTiff.init("test.tif") orelse return error.GTiffError;
     defer gtif.deinit();
 
-    try gtif.setOrigin(123.45, 6.789);
+    try gtif.setOrigin(0, 0, 123.45, 6.789);
     try gtif.setPixelScale(0.5, 0.5);
 
     const pixels: []const u8 = img.data[0..@intCast(img.width * img.height * img.nchan)];
