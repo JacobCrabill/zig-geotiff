@@ -456,7 +456,7 @@ const TIFFMemWriter = struct {
     }
 
     /// libtiff read callback for in-memory data.
-    fn memRead(client_data_handle: thandle_t, user_buf_opaque: ?*anyopaque, read_size_c: tsize_t) callconv(.C) tsize_t {
+    fn memRead(client_data_handle: thandle_t, user_buf_opaque: ?*anyopaque, read_size_c: tsize_t) callconv(.c) tsize_t {
         const client_data: *TIFFMemWriter = @ptrCast(@alignCast(client_data_handle));
 
         // Ensure user_buf_opaque is not null if read_size_c > 0, then cast
@@ -497,7 +497,7 @@ const TIFFMemWriter = struct {
     }
 
     /// libtiff write callback for in-memory data.
-    fn memWrite(client_data_handle: thandle_t, user_buf_opaque: ?*anyopaque, write_size_c: tsize_t) callconv(.C) tsize_t {
+    fn memWrite(client_data_handle: thandle_t, user_buf_opaque: ?*anyopaque, write_size_c: tsize_t) callconv(.c) tsize_t {
         const client_data: *TIFFMemWriter = @ptrCast(@alignCast(client_data_handle));
 
         var user_buf_ptr: [*]const u8 = undefined;
@@ -536,7 +536,7 @@ const TIFFMemWriter = struct {
     }
 
     /// libtiff seek callback for in-memory data.
-    fn memSeek(client_data_handle: thandle_t, offset_c: toff_t, whence: c_int) callconv(.C) toff_t {
+    fn memSeek(client_data_handle: thandle_t, offset_c: toff_t, whence: c_int) callconv(.c) toff_t {
         const client_data: *TIFFMemWriter = @ptrCast(@alignCast(client_data_handle));
 
         var new_offset: toff_t = undefined;
@@ -586,13 +586,13 @@ const TIFFMemWriter = struct {
     /// libtiff close callback for in-memory data.
     /// This function is called by libtiff when TIFFClose() is invoked.
     /// This function does nothing, as we must keep the in-memory buffer alive for access by the client.
-    fn memClose(_: thandle_t) callconv(.C) c_int {
+    fn memClose(_: thandle_t) callconv(.c) c_int {
         return 0;
     }
 
     /// libtiff size callback for in-memory data.
     /// Returns the current logical size of the in-memory "file".
-    fn memSize(client_data_handle: thandle_t) callconv(.C) toff_t {
+    fn memSize(client_data_handle: thandle_t) callconv(.c) toff_t {
         const client_data: *TIFFMemWriter = @ptrCast(@alignCast(client_data_handle));
         return @intCast(client_data.buffer.items.len);
     }
