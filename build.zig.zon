@@ -4,26 +4,29 @@
     .version = "1.7.4",
     .minimum_zig_version = "0.14.0",
     .dependencies = .{
+        // -------- Raw C/C++ Sources --------
         .geotiff = .{
             .url = "https://github.com/OSGeo/libgeotiff/archive/c51b76c64f7df50635022a83fd28cd55690106dc.tar.gz",
             .hash = "N-V-__8AAA3OOQDJcxc-7vk7V9PYYpRGretfTzAIBPOCjhtO",
         },
+
+        // -------- Zig-Wrapped C/C++ Packages --------
         .libtiff = .{
-            .url = "https://github.com/JacobCrabill/libtiff/archive/519d7502bcf0517d2f2527544aa7eb4ecbe04d4a.tar.gz",
-            .hash = "libtiff-4.7.0-3SryBnFDMACxkcN-nG1fwvMYYx-JpBTADUMqLFmE6igZ",
+            .url = "https://github.com/JacobCrabill/libtiff/archive/ef325a2a5bbc7dcd52ba8ca3490123a4e7a499a2.tar.gz",
+            .hash = "libtiff-4.7.0-3SryBn5FMAA9zTIlRRyOkZZmnkk6jHl92cpqpzAcofQo",
         },
         .proj = .{
-            .url = "https://github.com/JacobCrabill/zig-PROJ/archive/b04a450bbefc45412d9ba4d3fae68ba196a33b01.tar.gz",
-            .hash = "PROJ-9.6.0-UH_wpnksAAC22GAP2Oe6Kwj8_eQc7mu5-H_n3rWjR-Te",
+            .url = "https://github.com/JacobCrabill/zig-PROJ/archive/26c3544eb381c2dcef323021260235d518551f72.tar.gz",
+            .hash = "PROJ-9.6.0-UH_wpnksAABR1jCXBMsIa8228k3VTtQF-b9YWPar-d7Y",
         },
         .zlib = .{
-            .url = "https://github.com/allyourcodebase/zlib/archive/6c72830882690c1eb2567a537525c3f432c1da50.tar.gz",
-            .hash = "zlib-1.3.1-ZZQ7lVgMAACwO4nUUd8GLhsuQ5JQq_VAhlEiENJTUv6h",
+            .url = "https://github.com/allyourcodebase/zlib/archive/61e7df7e996ec5a5f13a653db3c419adb340d6ef.tar.gz",
+            .hash = "zlib-1.3.1-ZZQ7lbYMAAB1hTSOKSXAKAgHsfDcyWNH_37ojw5WSpgR",
         },
         // For testing
         .stb_image = .{
-            .url = "https://github.com/JacobCrabill/zig-stb-image/archive/5a650f9439b2b2d8ca5e498b349e25bb7308f7bb.tar.gz",
-            .hash = "zig_stb_image-2.28.0-9dD1dTgdBQBDRqd8_8qNHlT62Ox8Gfh3qbbBtvbufjom",
+            .url = "https://github.com/JacobCrabill/zig-stb-image/archive/db40631ef191d3692a706b142f524022c6be80d7.tar.gz",
+            .hash = "zig_stb_image-2.28.0-2-9dD1dfoYBQCzF7IA9_-tSbsF1PgN7HGfzDzGVRG2BoUY",
             .lazy = true,
         },
     },

@@ -5,7 +5,7 @@ const c = @cImport({
     @cInclude("xtiffio.h");
 });
 
-const ArrayList = std.ArrayList;
+const ArrayList = std.array_list.Managed;
 const Allocator = std.mem.Allocator;
 
 const logger = std.log.scoped(.geotiff);

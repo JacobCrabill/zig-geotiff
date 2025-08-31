@@ -3,10 +3,13 @@ const geotiff = @import("geotiff");
 const stb = @import("stb_image");
 
 pub fn main() !void {
-    var img: stb.Image = try stb.load_image("test.png", null);
+    var img: stb.Image = stb.load_image("test.png", null) catch {
+        std.debug.print("Test image not found (test.png)\n", .{});
+        return error.TestPngNotFound;
+    };
     defer img.deinit();
 
-    var gtif = geotiff.GTiff.init("test.tif") orelse return error.GTiffError;
+    var gtif = try geotiff.GTiff.init("test.tif");
     defer gtif.deinit();
 
     try gtif.setOrigin(0, 0, 123.45, 6.789);
@@ -17,8 +20,9 @@ pub fn main() !void {
         .width = @intCast(img.width),
         .height = @intCast(img.height),
         .nchan = @intCast(img.nchan),
+        .pixel_format = .rgb,
+        .bits_per_chan = 8,
         .pixels = pixels,
-        .format = .rgb,
     });
     std.debug.print("Wrote TIFF image of size {d}x{d} with {d} channels; {d} bytes\n", .{ img.width, img.height, img.nchan, pixels.len });
 }

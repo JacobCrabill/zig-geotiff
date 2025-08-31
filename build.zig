@@ -9,7 +9,7 @@ pub fn build(b: *std.Build) !void {
         "Specify static or dynamic linkage",
     ) orelse .static;
 
-    const build_example = b.option(bool, "build-example", "Build the example app using the Zig module") orelse false;
+    const build_example = b.option(bool, "example", "Build the example app using the Zig module") orelse false;
 
     // =========================================================================
     // Dependencies
@@ -115,9 +115,11 @@ pub fn build(b: *std.Build) !void {
 
     const example = b.addExecutable(.{
         .name = "makegeo",
-        .target = target,
-        .optimize = optimize,
-        .link_libc = true,
+        .root_module = b.createModule(.{
+            .target = target,
+            .optimize = optimize,
+            .link_libc = true,
+        }),
     });
     example.addCSourceFile(.{
         .file = geotiff.path("libgeotiff/bin/makegeo.c"),
@@ -142,10 +144,12 @@ pub fn build(b: *std.Build) !void {
 
         const example2 = b.addExecutable(.{
             .name = "example",
-            .root_source_file = b.path("src/example.zig"),
-            .target = target,
-            .optimize = optimize,
-            .link_libc = true,
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/example.zig"),
+                .target = target,
+                .optimize = optimize,
+                .link_libc = true,
+            }),
         });
         example2.root_module.addImport("geotiff", mod);
         example2.root_module.addImport("stb_image", stbi.module("stb_image"));
@@ -155,7 +159,6 @@ pub fn build(b: *std.Build) !void {
 
     const tests = b.addTest(.{
         .root_module = mod,
-        .link_libc = true,
     });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run unit tests (and generate documentation)");
