@@ -12,8 +12,8 @@
 
         // -------- Zig-Wrapped C/C++ Packages --------
         .libtiff = .{
-            .url = "https://github.com/JacobCrabill/libtiff/archive/ef325a2a5bbc7dcd52ba8ca3490123a4e7a499a2.tar.gz",
-            .hash = "libtiff-4.7.0-3SryBn5FMAA9zTIlRRyOkZZmnkk6jHl92cpqpzAcofQo",
+            .url = "https://github.com/JacobCrabill/libtiff/archive/9ef41fdba8c6dd7c98cc67bc191f53ea38f64d78.tar.gz",
+            .hash = "libtiff-4.7.0-3SryBnJFMAC-U-FH7UhafwLzTnfLqgdQhqmK27DJmIDd",
         },
         .proj = .{
             .url = "https://github.com/JacobCrabill/zig-PROJ/archive/26c3544eb381c2dcef323021260235d518551f72.tar.gz",
