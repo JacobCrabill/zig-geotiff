@@ -16,15 +16,15 @@
 
         // -------- Zig-Wrapped C/C++ Packages --------
         .libtiff = .{
-            .url = "https://github.com/JacobCrabill/libtiff/archive/0ef8079fa767e111d524f2dc6a905e2dc38933a9.tar.gz",
-            .hash = "libtiff-4.7.0-3SryBjdHMAAdqg-4SSlLNP9yBW1vlY11j3HmlFCECCFI",
+            .url = "https://github.com/JacobCrabill/libtiff/archive/5c3275199a09f616758275e98ce5e4bfe8178538.tar.gz",
+            .hash = "libtiff-4.7.0-3SryBjtHMAAMsoSrJieAHTXSOCiiDGACD-2XxsQeB6YV",
         },
         .proj = .{
             .url = "https://github.com/JacobCrabill/zig-PROJ/archive/cd85a173bb60e5090691eb153cc72c99f2733fe1.tar.gz",
             .hash = "PROJ-9.6.0-UH_wpqQsAAAeFEMX2g0ujqBIoAEb9WqMB8IjrSkE-8hy",
         },
         .zlib = .{
-            .url = "https://github.com/JacobCrabill/zlib/archive/b5dd068d4e9a315f862dfeb8b1aa36774523275a.tar.gz",
+            .url = "https://github.com/JacobCrabill/zig-zlib/archive/b5dd068d4e9a315f862dfeb8b1aa36774523275a.tar.gz",
             .hash = "zlib-1.3.1-ZZQ7lcIMAACGvjvQ8qzyqU2T4VrMA52JhHUpHRdK9hhh",
         },
         // For testing
