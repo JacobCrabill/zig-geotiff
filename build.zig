@@ -1,10 +1,11 @@
 const std = @import("std");
+const Translator = @import("translate_c").Translator;
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     const linkage = b.option(
-        std.builtin.LinkMode,
+        std.lang.LinkMode,
         "linkage",
         "Specify static or dynamic linkage",
     ) orelse .static;
@@ -80,13 +81,13 @@ pub fn build(b: *std.Build) !void {
         .linkage = linkage,
     });
 
-    libgeotiff.addConfigHeader(gtiff_h);
-    libgeotiff.addConfigHeader(geo_config_h);
+    libgeotiff.root_module.addConfigHeader(gtiff_h);
+    libgeotiff.root_module.addConfigHeader(geo_config_h);
     libgeotiff.installConfigHeader(gtiff_h);
     libgeotiff.installConfigHeader(geo_config_h);
 
-    libgeotiff.addIncludePath(geotiff.path("libgeotiff"));
-    libgeotiff.addIncludePath(geotiff.path("libgeotiff/libxtiff"));
+    libgeotiff.root_module.addIncludePath(geotiff.path("libgeotiff"));
+    libgeotiff.root_module.addIncludePath(geotiff.path("libgeotiff/libxtiff"));
 
     // The repo is not well organized, so we can't just use installHeadersDirectory().
     // Instead, install each individual header & include file directly.
@@ -95,14 +96,14 @@ pub fn build(b: *std.Build) !void {
     }
     libgeotiff.installHeader(geotiff.path("libgeotiff/libxtiff/xtiffio.h"), "xtiffio.h");
 
-    libgeotiff.linkLibrary(libz);
-    libgeotiff.linkLibrary(libtiff);
-    libgeotiff.linkLibrary(libproj);
+    libgeotiff.root_module.linkLibrary(libz);
+    libgeotiff.root_module.linkLibrary(libtiff);
+    libgeotiff.root_module.linkLibrary(libproj);
 
     libgeotiff.installLibraryHeaders(libtiff);
     libgeotiff.installLibraryHeaders(libproj);
 
-    libgeotiff.addCSourceFiles(.{
+    libgeotiff.root_module.addCSourceFiles(.{
         .root = geotiff.path("libgeotiff"),
         .files = geotiff_lib_sources,
         .flags = std_c_flags,
@@ -121,21 +122,31 @@ pub fn build(b: *std.Build) !void {
             .link_libc = true,
         }),
     });
-    example.addCSourceFile(.{
+    example.root_module.addCSourceFile(.{
         .file = geotiff.path("libgeotiff/bin/makegeo.c"),
         .flags = std_c_flags,
     });
-    example.linkLibrary(libgeotiff);
+    example.root_module.linkLibrary(libgeotiff);
 
     b.installArtifact(example);
 
     // =========================================================================
     // Zig Module
+    // cImport is gone; translate the C headers to Zig at build time instead
+    const translate_c = b.dependency("translate_c", .{});
+    const translator: Translator = .init(translate_c, .{
+        .c_source_file = b.path("src/c.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    translator.linkLibrary(libgeotiff);
+
     const mod = b.addModule("geotiff", .{
         .root_source_file = b.path("src/geotiff.zig"),
         .target = target,
         .optimize = optimize,
         .link_libc = true,
+        .imports = &.{.{ .name = "c", .module = translator.mod }},
     });
     mod.linkLibrary(libgeotiff);
 

@@ -13,3 +13,4 @@ zig-out/
 *.so
 *.tif
 *.txt
+zig-pkg/

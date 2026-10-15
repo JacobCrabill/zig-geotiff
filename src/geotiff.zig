@@ -1,9 +1,6 @@
 //! GeoTIFF API in Zig
 const std = @import("std");
-const c = @cImport({
-    @cInclude("geotiffio.h");
-    @cInclude("xtiffio.h");
-});
+const c = @import("c");
 
 const ArrayList = std.array_list.Managed;
 const Allocator = std.mem.Allocator;
@@ -617,7 +614,7 @@ test "in-memory TIFF" {
     const height: usize = 64;
     const nchan: usize = 3;
     const bytes: usize = width * height * nchan;
-    const pixels: [bytes]u8 = [_]u8{0} ** (bytes);
+    const pixels: [bytes]u8 = @splat(0);
 
     try gtif.writeImage(.{
         .width = @intCast(width),
